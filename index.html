@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>읽은 책 기록장</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px;
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+    background: #f6f3ee; color: #333;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 20px; }
+  section {
+    background: #fff; border-radius: 12px; padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 20px;
+  }
+  h2 { font-size: 17px; margin: 0 0 14px; }
+  .row { display: flex; align-items: center; margin-bottom: 12px; gap: 10px; }
+  .row label { width: 80px; flex-shrink: 0; font-size: 14px; color: #555; }
+  .row input[type=text] {
+    flex: 1; padding: 9px 10px; font-size: 15px;
+    border: 1px solid #ccc; border-radius: 8px;
+  }
+  .row input[type=text]:focus { outline: none; border-color: #c98a2b; }
+  .stars { display: flex; gap: 2px; }
+  .stars button {
+    background: none; border: none; cursor: pointer;
+    font-size: 28px; line-height: 1; padding: 0 2px; color: #ccc;
+  }
+  .stars button.on { color: #f2a900; }
+  .actions { display: flex; justify-content: space-between; align-items: center; }
+  .msg { color: #c0392b; font-size: 13px; min-height: 1em; }
+  .primary {
+    background: #c98a2b; color: #fff; border: none; border-radius: 8px;
+    padding: 10px 22px; font-size: 15px; cursor: pointer;
+  }
+  .primary:hover { background: #b07620; }
+  .summary { font-size: 13px; color: #777; font-weight: normal; margin-left: 6px; }
+  .book {
+    border: 1px solid #eee; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px;
+  }
+  .book-top { display: flex; align-items: center; gap: 10px; }
+  .book-stars { color: #f2a900; font-size: 18px; letter-spacing: 1px; white-space: nowrap; }
+  .book-title { font-weight: bold; font-size: 16px; flex: 1; word-break: break-all; }
+  .del {
+    background: none; border: 1px solid #ddd; color: #999; border-radius: 6px;
+    font-size: 12px; padding: 3px 8px; cursor: pointer;
+  }
+  .del:hover { color: #c0392b; border-color: #c0392b; }
+  .book-bottom {
+    display: flex; justify-content: space-between; gap: 10px;
+    margin-top: 6px; font-size: 14px; color: #555;
+  }
+  .book-note { word-break: break-all; }
+  .book-date { color: #aaa; font-size: 12px; white-space: nowrap; }
+  .empty { text-align: center; color: #999; padding: 20px 0; }
+  .list-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 10px; }
+  .list-head h2 { margin: 0; }
+  .excel {
+    background: #1d6f42; color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 14px; cursor: pointer; white-space: nowrap;
+  }
+  .excel:hover { background: #155a35; }
+  .excel:disabled { background: #bbb; cursor: default; }
+
+  /* 휴대전화 화면 */
+  @media (max-width: 600px) {
+    body { padding: 14px 10px; }
+    h1 { font-size: 22px; margin-bottom: 14px; }
+    section { padding: 16px 14px; border-radius: 10px; margin-bottom: 14px; }
+    .row { flex-direction: column; align-items: stretch; gap: 6px; margin-bottom: 14px; }
+    .row label { width: auto; }
+    .row input[type=text] { font-size: 16px; padding: 12px; } /* 16px 이상이어야 아이폰에서 확대되지 않음 */
+    .stars button { font-size: 38px; padding: 0 4px; }
+    .actions { flex-direction: column-reverse; align-items: stretch; gap: 8px; }
+    .primary { width: 100%; padding: 14px; font-size: 16px; }
+    .summary { display: block; margin: 4px 0 0; }
+    .excel { padding: 10px 12px; }
+    .book-top { flex-wrap: wrap; }
+    .book-stars { order: 1; }
+    .del { order: 2; margin-left: auto; padding: 6px 12px; font-size: 13px; }
+    .book-title { order: 3; flex-basis: 100%; }
+    .book-bottom { flex-direction: column; gap: 4px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📚 읽은 책 기록장</h1>
+
+  <section>
+    <h2>새 기록</h2>
+    <div class="row">
+      <label for="title">책 제목</label>
+      <input type="text" id="title" maxlength="100" placeholder="예: 데미안">
+    </div>
+    <div class="row">
+      <label>별점</label>
+      <div class="stars" id="starInput"></div>
+    </div>
+    <div class="row">
+      <label for="note">한 줄 감상</label>
+      <input type="text" id="note" maxlength="150" placeholder="한 줄로 남겨 보세요">
+    </div>
+    <div class="actions">
+      <span class="msg" id="msg"></span>
+      <button class="primary" id="saveBtn">기록하기</button>
+    </div>
+  </section>
+
+  <section>
+    <div class="list-head">
+      <h2>내 책 목록<span class="summary" id="summary"></span></h2>
+      <button class="excel" id="excelBtn">엑셀로 내려받기</button>
+    </div>
+    <div id="list"></div>
+  </section>
+</div>
+
+<script>
+  const KEY = 'bookLog.v1';
+  let books = load();
+  let rating = 0;
+
+  const titleEl = document.getElementById('title');
+  const noteEl = document.getElementById('note');
+  const msgEl = document.getElementById('msg');
+  const starInput = document.getElementById('starInput');
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function save() { localStorage.setItem(KEY, JSON.stringify(books)); }
+
+  // 별점 입력 버튼
+  for (let i = 1; i <= 5; i++) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = '★';
+    b.title = i + '점';
+    b.addEventListener('click', () => { rating = i; paintStars(); });
+    starInput.appendChild(b);
+  }
+  function paintStars() {
+    [...starInput.children].forEach((b, idx) => b.classList.toggle('on', idx < rating));
+  }
+
+  function today() {
+    const d = new Date();
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
+  function addBook() {
+    const title = titleEl.value.trim();
+    const note = noteEl.value.trim();
+    if (!title) { msgEl.textContent = '책 제목을 적어 주세요.'; titleEl.focus(); return; }
+    if (!rating) { msgEl.textContent = '별점을 골라 주세요.'; return; }
+    books.push({ id: Date.now(), title, rating, note, date: today() });
+    save();
+    titleEl.value = ''; noteEl.value = ''; rating = 0; paintStars();
+    msgEl.textContent = '';
+    titleEl.focus();
+    render();
+  }
+
+  function removeBook(id) {
+    const b = books.find(x => x.id === id);
+    if (!b || !confirm('"' + b.title + '" 기록을 지울까요?')) return;
+    books = books.filter(x => x.id !== id);
+    save();
+    render();
+  }
+
+  function render() {
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    document.getElementById('summary').textContent =
+      books.length ? '총 ' + books.length + '권 · 별점 높은 순' : '';
+    document.getElementById('excelBtn').disabled = !books.length;
+
+    if (!books.length) {
+      list.innerHTML = '<div class="empty">아직 기록한 책이 없어요.</div>';
+      return;
+    }
+
+    const sorted = [...books].sort((a, b) => b.rating - a.rating || b.id - a.id);
+    for (const b of sorted) {
+      const card = document.createElement('div');
+      card.className = 'book';
+
+      const top = document.createElement('div');
+      top.className = 'book-top';
+      const st = document.createElement('span');
+      st.className = 'book-stars';
+      st.textContent = '★'.repeat(b.rating) + '☆'.repeat(5 - b.rating);
+      const tt = document.createElement('span');
+      tt.className = 'book-title';
+      tt.textContent = b.title;
+      const del = document.createElement('button');
+      del.className = 'del';
+      del.textContent = '삭제';
+      del.addEventListener('click', () => removeBook(b.id));
+      top.append(st, tt, del);
+
+      const bottom = document.createElement('div');
+      bottom.className = 'book-bottom';
+      const nt = document.createElement('span');
+      nt.className = 'book-note';
+      nt.textContent = b.note ? '“' + b.note + '”' : '';
+      const dt = document.createElement('span');
+      dt.className = 'book-date';
+      dt.textContent = b.date;
+      bottom.append(nt, dt);
+
+      card.append(top, bottom);
+      list.appendChild(card);
+    }
+  }
+
+  // 엑셀에서 바로 열리는 CSV 파일로 내려받기 (한글 깨짐 방지용 BOM 포함)
+  function csvCell(v) {
+    let s = String(v ?? '');
+    if (/^[=+\-@]/.test(s)) s = "'" + s;   // 엑셀이 수식으로 읽지 않도록
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  function downloadExcel() {
+    if (!books.length) return;
+    const sorted = [...books].sort((a, b) => b.rating - a.rating || b.id - a.id);
+    const rows = [['책 제목', '별점', '한 줄 감상', '기록한 날']];
+    for (const b of sorted) rows.push([b.title, b.rating, b.note, b.date]);
+    const csv = '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '읽은책_' + today() + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+  document.getElementById('excelBtn').addEventListener('click', downloadExcel);
+  document.getElementById('saveBtn').addEventListener('click', addBook);
+  [titleEl, noteEl].forEach(el =>
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing) addBook(); })
+  );
+
+  render();
+</script>
+</body>
+</html>
